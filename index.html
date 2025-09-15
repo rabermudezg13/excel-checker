@@ -1,18 +1,372 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparador de Excel</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Excel Comparator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .file-input:hover { transform: translateY(-1px); }
+        .result-item { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="text/babel" src="app.js"></script>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- Header -->
+        <div class="text-center mb-8 bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                📊 Excel Comparator
+            </h1>
+            <p class="text-gray-600 text-lg">
+                Compare two Excel files and find missing names
+            </p>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <!-- File 1 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-2xl">📄</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800">Base File (1)</h3>
+                    <p class="text-gray-600 mb-4">
+                        The file to compare against
+                    </p>
+                    <label class="file-input cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-all duration-200 inline-block font-medium">
+                        📤 Select File
+                        <input type="file" accept=".xlsx,.xls" class="hidden" id="file1" onchange="handleFile1(event)">
+                    </label>
+                    
+                    <div id="file1-info" class="mt-4 hidden">
+                        <div class="flex items-center justify-center gap-2 text-green-600 mb-3">
+                            <span>✅</span>
+                            <span class="font-medium">File loaded successfully</span>
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-sm font-medium mb-2 text-gray-700">
+                                Select the names column:
+                            </label>
+                            <select id="column1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select column...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File 2 -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-2xl">📄</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800">File to Compare (2)</h3>
+                    <p class="text-gray-600 mb-4">
+                        The file you want to verify
+                    </p>
+                    <label class="file-input cursor-pointer bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-all duration-200 inline-block font-medium">
+                        📤 Select File
+                        <input type="file" accept=".xlsx,.xls" class="hidden" id="file2" onchange="handleFile2(event)">
+                    </label>
+                    
+                    <div id="file2-info" class="mt-4 hidden">
+                        <div class="flex items-center justify-center gap-2 text-green-600 mb-3">
+                            <span>✅</span>
+                            <span class="font-medium">File loaded successfully</span>
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-sm font-medium mb-2 text-gray-700">
+                                Select the names column:
+                            </label>
+                            <select id="column2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">Select column...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compare Button -->
+        <div class="text-center mb-8">
+            <button id="compareBtn" onclick="compareFiles()" disabled 
+                    class="bg-purple-500 text-white px-8 py-4 rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-lg font-semibold shadow-lg">
+                <span id="compareText">🔍 Compare Files</span>
+                <span id="loadingSpinner" class="loading hidden inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full ml-2"></span>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">📋 Comparison Results</h2>
+                    <button onclick="downloadResults()" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        💾 Download Results
+                    </button>
+                </div>
+
+                <!-- Statistics -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4 text-center">
+                        <div id="total1" class="text-3xl font-bold text-blue-600">0</div>
+                        <div class="text-sm text-gray-600">Total File 1</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4 text-center">
+                        <div id="total2" class="text-3xl font-bold text-green-600">0</div>
+                        <div class="text-sm text-gray-600">Total File 2</div>
+                    </div>
+                    <div class="bg-red-50 rounded-lg p-4 text-center">
+                        <div id="missing1" class="text-3xl font-bold text-red-600">0</div>
+                        <div class="text-sm text-gray-600">Missing in File 1</div>
+                    </div>
+                    <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                        <div id="missing2" class="text-3xl font-bold text-yellow-600">0</div>
+                        <div class="text-sm text-gray-600">Missing in File 2</div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Missing in File 1 -->
+                    <div class="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
+                        <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            ⚠️ Names missing in File 1
+                            <span id="count1" class="bg-red-500 text-white px-2 py-1 rounded-full text-xs">0</span>
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            These are in file 2 but NOT in file 1:
+                        </p>
+                        <div id="missingList1" class="max-h-60 overflow-y-auto">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Missing in File 2 -->
+                    <div class="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
+                        <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            ⚠️ Names missing in File 2
+                            <span id="count2" class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">0</span>
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-3">
+                            These are in file 1 but NOT in file 2:
+                        </p>
+                        <div id="missingList2" class="max-h-60 overflow-y-auto">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let file1Data = null;
+        let file2Data = null;
+        let comparisonResults = null;
+
+        function handleFile1(event) {
+            const file = event.target.files[0];
+            if (file) {
+                readExcelFile(file, 1);
+            }
+        }
+
+        function handleFile2(event) {
+            const file = event.target.files[0];
+            if (file) {
+                readExcelFile(file, 2);
+            }
+        }
+
+        function readExcelFile(file, fileNumber) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length > 0) {
+                        const headers = jsonData[0];
+                        const fileData = { data: jsonData, headers: headers };
+                        
+                        if (fileNumber === 1) {
+                            file1Data = fileData;
+                            populateColumnSelect('column1', headers);
+                            document.getElementById('file1-info').classList.remove('hidden');
+                        } else {
+                            file2Data = fileData;
+                            populateColumnSelect('column2', headers);
+                            document.getElementById('file2-info').classList.remove('hidden');
+                        }
+                        
+                        checkIfReadyToCompare();
+                    }
+                } catch (error) {
+                    alert('Error reading file: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function populateColumnSelect(selectId, headers) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select column...</option>';
+            headers.forEach((header, index) => {
+                const option = document.createElement('option');
+                option.value = header;
+                option.textContent = header;
+                if (index === 0) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function checkIfReadyToCompare() {
+            const btn = document.getElementById('compareBtn');
+            if (file1Data && file2Data) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'cursor-not-allowed');
+                btn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+            }
+        }
+
+        function compareFiles() {
+            const column1 = document.getElementById('column1').value;
+            const column2 = document.getElementById('column2').value;
+            
+            if (!column1 || !column2) {
+                alert('Please select the columns to compare in both files');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('compareText').style.display = 'none';
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            document.getElementById('compareBtn').disabled = true;
+            
+            setTimeout(() => {
+                try {
+                    const col1Index = file1Data.headers.indexOf(column1);
+                    const col2Index = file2Data.headers.indexOf(column2);
+                    
+                    // Extract names from both files
+                    const names1 = file1Data.data.slice(1)
+                        .map(row => row[col1Index])
+                        .filter(name => name && name.toString().trim() !== '')
+                        .map(name => name.toString().trim().toLowerCase());
+                    
+                    const names2Raw = file2Data.data.slice(1)
+                        .map(row => row[col2Index])
+                        .filter(name => name && name.toString().trim() !== '')
+                        .map(name => name.toString().trim());
+                    
+                    const names2 = names2Raw.map(name => name.toLowerCase());
+                    
+                    // Find differences
+                    const missingInFirst = names2Raw.filter(name => 
+                        !names1.includes(name.toLowerCase())
+                    );
+                    
+                    const missingInSecond = file1Data.data.slice(1)
+                        .map(row => row[col1Index])
+                        .filter(name => name && name.toString().trim() !== '')
+                        .map(name => name.toString().trim())
+                        .filter(name => !names2.includes(name.toLowerCase()));
+                    
+                    comparisonResults = {
+                        missingInFirst: [...new Set(missingInFirst)],
+                        missingInSecond: [...new Set(missingInSecond)],
+                        totalFile1: names1.length,
+                        totalFile2: names2.length
+                    };
+                    
+                    displayResults();
+                    
+                } catch (error) {
+                    alert('Error comparing files: ' + error.message);
+                } finally {
+                    // Hide loading
+                    document.getElementById('compareText').style.display = 'inline';
+                    document.getElementById('loadingSpinner').classList.add('hidden');
+                    document.getElementById('compareBtn').disabled = false;
+                }
+            }, 500);
+        }
+
+        function displayResults() {
+            const results = comparisonResults;
+            
+            // Update statistics
+            document.getElementById('total1').textContent = results.totalFile1;
+            document.getElementById('total2').textContent = results.totalFile2;
+            document.getElementById('missing1').textContent = results.missingInFirst.length;
+            document.getElementById('missing2').textContent = results.missingInSecond.length;
+            document.getElementById('count1').textContent = results.missingInFirst.length;
+            document.getElementById('count2').textContent = results.missingInSecond.length;
+            
+            // Display missing names
+            displayMissingNames('missingList1', results.missingInFirst, 'red');
+            displayMissingNames('missingList2', results.missingInSecond, 'yellow');
+            
+            // Show results section
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayMissingNames(containerId, names, color) {
+            const container = document.getElementById(containerId);
+            
+            if (names.length === 0) {
+                container.innerHTML = `
+                    <div class="text-green-600 font-medium">
+                        ✅ All names are present
+                    </div>
+                `;
+            } else {
+                const namesHTML = names.map(name => 
+                    `<div class="result-item bg-${color}-100 border border-${color}-200 px-3 py-2 rounded mb-2 text-sm">
+                        ${name}
+                    </div>`
+                ).join('');
+                container.innerHTML = namesHTML;
+            }
+        }
+
+        function downloadResults() {
+            if (!comparisonResults) return;
+            
+            const wb = XLSX.utils.book_new();
+            
+            // Sheet 1: Missing in first file
+            const ws1Data = [
+                ['Names that are in the second file but NOT in the first'],
+                [''],
+                ...comparisonResults.missingInFirst.map(name => [name])
+            ];
+            const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+            XLSX.utils.book_append_sheet(wb, ws1, 'Missing in File 1');
+            
+            // Sheet 2: Missing in second file
+            const ws2Data = [
+                ['Names that are in the first file but NOT in the second'],
+                [''],
+                ...comparisonResults.missingInSecond.map(name => [name])
+            ];
+            const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+            XLSX.utils.book_append_sheet(wb, ws2, 'Missing in File 2');
+            
+            // Download
+            XLSX.writeFile(wb, 'comparison_results.xlsx');
+        }
+    </script>
 </body>
 </html>
