@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel Comparator</title>
+    <title>District vs Lee Hired Comparison</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -19,34 +19,39 @@
         <!-- Header -->
         <div class="text-center mb-8 bg-white rounded-lg shadow-lg p-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">
-                📊 Excel Comparator
+                📊 District vs Lee Hired Comparison
             </h1>
             <p class="text-gray-600 text-lg">
-                Compare two Excel files and find missing names
+                Compare district file with Lee hired file to find missing names
             </p>
+            <div class="mt-4 bg-blue-50 rounded-lg p-4">
+                <p class="text-sm text-blue-700">
+                    <strong>Instructions:</strong> Upload the district file first, then upload the Lee hired file to compare who's missing where.
+                </p>
+            </div>
         </div>
 
         <!-- File Upload Section -->
         <div class="grid md:grid-cols-2 gap-6 mb-6">
-            <!-- File 1 -->
+            <!-- District File -->
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <div class="text-center">
                     <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-2xl">📄</span>
+                        <span class="text-2xl">🏫</span>
                     </div>
-                    <h3 class="text-xl font-semibold mb-2 text-gray-800">Base File (1)</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800">District File</h3>
                     <p class="text-gray-600 mb-4">
-                        The file to compare against
+                        Upload the district file (base reference)
                     </p>
                     <label class="file-input cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-all duration-200 inline-block font-medium">
-                        📤 Select File
+                        📤 Upload District File
                         <input type="file" accept=".xlsx,.xls" class="hidden" id="file1" onchange="handleFile1(event)">
                     </label>
                     
                     <div id="file1-info" class="mt-4 hidden">
                         <div class="flex items-center justify-center gap-2 text-green-600 mb-3">
                             <span>✅</span>
-                            <span class="font-medium">File loaded successfully</span>
+                            <span class="font-medium">District file loaded successfully</span>
                         </div>
                         <div class="text-left">
                             <label class="block text-sm font-medium mb-2 text-gray-700">
@@ -60,25 +65,25 @@
                 </div>
             </div>
 
-            <!-- File 2 -->
+            <!-- Lee Hired File -->
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <div class="text-center">
                     <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                        <span class="text-2xl">📄</span>
+                        <span class="text-2xl">👤</span>
                     </div>
-                    <h3 class="text-xl font-semibold mb-2 text-gray-800">File to Compare (2)</h3>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800">Lee Hired File</h3>
                     <p class="text-gray-600 mb-4">
-                        The file you want to verify
+                        Upload the file with people hired by Lee
                     </p>
                     <label class="file-input cursor-pointer bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-all duration-200 inline-block font-medium">
-                        📤 Select File
+                        📤 Upload Lee Hired File
                         <input type="file" accept=".xlsx,.xls" class="hidden" id="file2" onchange="handleFile2(event)">
                     </label>
                     
                     <div id="file2-info" class="mt-4 hidden">
                         <div class="flex items-center justify-center gap-2 text-green-600 mb-3">
                             <span>✅</span>
-                            <span class="font-medium">File loaded successfully</span>
+                            <span class="font-medium">Lee hired file loaded successfully</span>
                         </div>
                         <div class="text-left">
                             <label class="block text-sm font-medium mb-2 text-gray-700">
@@ -97,7 +102,7 @@
         <div class="text-center mb-8">
             <button id="compareBtn" onclick="compareFiles()" disabled 
                     class="bg-purple-500 text-white px-8 py-4 rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-lg font-semibold shadow-lg">
-                <span id="compareText">🔍 Compare Files</span>
+                <span id="compareText">🔍 Compare District vs Lee Hired</span>
                 <span id="loadingSpinner" class="loading hidden inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full ml-2"></span>
             </button>
         </div>
@@ -109,7 +114,7 @@
                     <h2 class="text-2xl font-bold text-gray-800">📋 Comparison Results</h2>
                     <button onclick="downloadResults()" 
                             class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-                        💾 Download Results
+                        💾 Download Excel Report
                     </button>
                 </div>
 
@@ -117,45 +122,45 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-blue-50 rounded-lg p-4 text-center">
                         <div id="total1" class="text-3xl font-bold text-blue-600">0</div>
-                        <div class="text-sm text-gray-600">Total File 1</div>
+                        <div class="text-sm text-gray-600">Total District File</div>
                     </div>
                     <div class="bg-green-50 rounded-lg p-4 text-center">
                         <div id="total2" class="text-3xl font-bold text-green-600">0</div>
-                        <div class="text-sm text-gray-600">Total File 2</div>
+                        <div class="text-sm text-gray-600">Total Lee Hired</div>
                     </div>
                     <div class="bg-red-50 rounded-lg p-4 text-center">
                         <div id="missing1" class="text-3xl font-bold text-red-600">0</div>
-                        <div class="text-sm text-gray-600">Missing in File 1</div>
+                        <div class="text-sm text-gray-600">Missing in District</div>
                     </div>
                     <div class="bg-yellow-50 rounded-lg p-4 text-center">
                         <div id="missing2" class="text-3xl font-bold text-yellow-600">0</div>
-                        <div class="text-sm text-gray-600">Missing in File 2</div>
+                        <div class="text-sm text-gray-600">Missing in Lee File</div>
                     </div>
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Missing in File 1 -->
+                    <!-- Missing in District File -->
                     <div class="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
                         <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            ⚠️ Names missing in File 1
+                            ⚠️ Names missing in District File
                             <span id="count1" class="bg-red-500 text-white px-2 py-1 rounded-full text-xs">0</span>
                         </h3>
                         <p class="text-sm text-gray-600 mb-3">
-                            These are in file 2 but NOT in file 1:
+                            These people were hired by Lee but are NOT in the district file:
                         </p>
                         <div id="missingList1" class="max-h-60 overflow-y-auto">
                             <!-- Results will be populated here -->
                         </div>
                     </div>
 
-                    <!-- Missing in File 2 -->
+                    <!-- Missing in Lee Hired File -->
                     <div class="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
                         <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            ⚠️ Names missing in File 2
+                            ⚠️ Names missing in Lee Hired File
                             <span id="count2" class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs">0</span>
                         </h3>
                         <p class="text-sm text-gray-600 mb-3">
-                            These are in file 1 but NOT in file 2:
+                            These are in the district file but NOT hired by Lee:
                         </p>
                         <div id="missingList2" class="max-h-60 overflow-y-auto">
                             <!-- Results will be populated here -->
@@ -346,26 +351,30 @@
             
             const wb = XLSX.utils.book_new();
             
-            // Sheet 1: Missing in first file
+            // Sheet 1: Missing in district file
             const ws1Data = [
-                ['Names that are in the second file but NOT in the first'],
+                ['People hired by Lee but NOT found in district file'],
+                ['Date: ' + new Date().toLocaleDateString()],
                 [''],
+                ['Name'],
                 ...comparisonResults.missingInFirst.map(name => [name])
             ];
             const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-            XLSX.utils.book_append_sheet(wb, ws1, 'Missing in File 1');
+            XLSX.utils.book_append_sheet(wb, ws1, 'Missing in District');
             
-            // Sheet 2: Missing in second file
+            // Sheet 2: Missing in Lee hired file
             const ws2Data = [
-                ['Names that are in the first file but NOT in the second'],
+                ['People in district file but NOT hired by Lee'],
+                ['Date: ' + new Date().toLocaleDateString()],
                 [''],
+                ['Name'],
                 ...comparisonResults.missingInSecond.map(name => [name])
             ];
             const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
-            XLSX.utils.book_append_sheet(wb, ws2, 'Missing in File 2');
+            XLSX.utils.book_append_sheet(wb, ws2, 'Missing in Lee Hired');
             
             // Download
-            XLSX.writeFile(wb, 'comparison_results.xlsx');
+            XLSX.writeFile(wb, 'district_vs_lee_comparison.xlsx');
         }
     </script>
 </body>
